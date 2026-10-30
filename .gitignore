@@ -1,28 +1,16 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.pytest_cache/
-.mypy_cache/
-.venv/
-venv/
-env/
-
-# Secrets and local environment
+# Secrets
 .env
 .env.*
 !.env.example
+backend/.env
 
-# Frontend
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node / Vite
 node_modules/
-dist/
-.vite/
-
-# Editors / OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+supportai/node_modules/
+supportai/dist/

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: c2c-project
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt && npm ci --prefix supportai && npm run build --prefix supportai
+    startCommand: uvicorn backend.c2cProject:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: MAX_QUERY_CHARS
+        value: "5000"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: VITE_API_URL
+        value: /customer-support

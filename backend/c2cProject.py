@@ -22,6 +22,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 
 load_dotenv()
@@ -1352,9 +1353,6 @@ def generate_response(result, customer_query):
 # ---------------------------------------------------------------------------
 
 app = FastAPI(title="AI Customer Support Agent")
-@app.get("/")
-def home():
-    return {"message": "Customer Support API is running!"}
 _origins = [
     o.strip()
     for o in os.getenv("CORS_ORIGINS", "http://localhost:5500,http://127.0.0.1:5500").split(",")
@@ -1448,7 +1446,15 @@ def get_analytics():
     return analytics.snapshot()
 
 
+# Serve the built Vite frontend from the same origin as the API.
+_FRONTEND_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "supportai", "dist")
+)
+if os.path.isdir(_FRONTEND_DIST):
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("backend.c2cProject:app", host="127.0.0.1", port=8000, reload=False)
