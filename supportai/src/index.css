@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { @apply bg-canvas font-sans text-sm text-ink antialiased; }
+  :focus-visible { @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-surface; }
+}
+
+/* Shared building blocks, so every page uses the same buttons, inputs and cards. */
+@layer components {
+  .card { @apply rounded-lg border border-line bg-surface; }
+
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition-colors;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply bg-accent text-white hover:bg-accent-hover; }
+  .btn-secondary { @apply border border-line bg-surface text-ink hover:bg-canvas; }
+
+  .input {
+    @apply h-9 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted;
+    @apply focus:border-accent;
+  }
+
+  .scroll-slim { scrollbar-width: thin; scrollbar-color: #C9CED6 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

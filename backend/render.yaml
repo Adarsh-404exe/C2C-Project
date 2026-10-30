@@ -1,0 +1,33 @@
+services:
+  # FastAPI backend
+  - type: web
+    name: c2c-support-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn c2cProject:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: MAX_QUERY_CHARS
+        value: "5000"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: CORS_ORIGINS
+        value: http://localhost:5173,http://127.0.0.1:5173,https://supportai-dashboard.onrender.com
+
+  # React + Vite frontend
+  - type: web
+    name: supportai-dashboard
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    rootDir: supportai
+    envVars:
+      - key: VITE_API_URL
+        value: https://c2c-support-api.onrender.com/customer-support
