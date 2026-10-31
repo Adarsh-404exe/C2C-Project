@@ -1367,8 +1367,14 @@ app.add_middleware(
 )
 
 
+class ConversationTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(default="", max_length=MAX_QUERY_CHARS)
+
+
 class SupportRequest(BaseModel):
     query: str = Field(..., max_length=MAX_QUERY_CHARS)
+    history: List[ConversationTurn] = Field(default_factory=list, max_length=12)
     customer_id: Optional[str] = Field(default=None, max_length=64)  # optional: ownership check
 
     @field_validator("query")
@@ -1420,9 +1426,27 @@ async def _unexpected_handler(request: Request, exc: Exception):
 
 @app.post("/customer-support", response_model=SupportResponse)
 def customer_support(request: SupportRequest):
-    # Plain `def`: FastAPI isse threadpool me chalata hai. Koi global state nahi, concurrent requests safe.
+    # Conversation context is request-scoped; never store customer state in shared globals.
     query = request.query
     data = parseDetails(query)
+
+    # Prefer an order ID explicitly supplied in the current message. Otherwise reuse the
+    # most recent ID from customer-authored history only (never trust an assistant guess).
+    order_id_pattern = re.compile(r"\bORD\s*[- ]?\s*(\d{3,})\b", re.IGNORECASE)
+    current_match = order_id_pattern.search(query)
+    resolved_order_id = f"ORD{current_match.group(1)}" if current_match else ""
+    if not resolved_order_id:
+        for turn in reversed(request.history):
+            if turn.role != "user":
+                continue
+            matches = list(order_id_pattern.finditer(turn.content))
+            if matches:
+                resolved_order_id = f"ORD{matches[-1].group(1)}"
+                break
+
+    if resolved_order_id:
+        data.ID = resolved_order_id
+        data.missing_information = [item for item in data.missing_information if item != "order_id"]
     result = run_support(data, query, request.customer_id or "")
     text = generate_response(result, query)
     return SupportResponse(
