@@ -39,12 +39,12 @@ export function useChat() {
     setConversations((list) => list.map((c) => (c.id === id ? fn(c) : c)));
   }, []);
 
-  const request = useCallback(async (id, query) => {
+  const request = useCallback(async (id, query, history = []) => {
     pendingRef.current.add(id);
     setPending((p) => ({ ...p, [id]: true }));
     const started = performance.now();
     try {
-      const reply = await askSupport(query);
+      const reply = await askSupport(query, history);
       const ms = Math.round(performance.now() - started);
       const at = Date.now();
       patch(id, (c) => ({
@@ -79,6 +79,12 @@ export function useChat() {
     const at = Date.now();
     const userMsg = { id: nextId(), role: "user", text: clean, attachment, at };
     let convId = id;
+    const existingConversation = convId ? conversations.find((c) => c.id === convId) : null;
+    const history = (existingConversation?.messages || [])
+      .filter((m) => (m.role === "user" || m.role === "ai") && !m.error)
+      .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text || "" }))
+      .filter((m) => m.content.trim())
+      .slice(-12);
 
     if (!convId) {
       convId = `c${at}-${counter++}`;
@@ -98,15 +104,21 @@ export function useChat() {
     } else {
       patch(convId, (c) => ({ ...c, resolved: false, updatedAt: at, messages: [...c.messages, userMsg] }));
     }
-    request(convId, clean);
+    request(convId, clean, history);
     return convId;
-  }, [patch, request]);
+  }, [conversations, patch, request]);
 
   const retry = useCallback((id, query) => {
     if (!query || pendingRef.current.has(id)) return;
     patch(id, (c) => ({ ...c, failedQuery: null, messages: c.messages.filter((m) => !m.error) }));
-    request(id, query);
-  }, [patch, request]);
+    const conversation = conversations.find((c) => c.id === id);
+    const history = (conversation?.messages || [])
+      .filter((m) => (m.role === "user" || m.role === "ai") && !m.error && m.text !== query)
+      .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text || "" }))
+      .filter((m) => m.content.trim())
+      .slice(-12);
+    request(id, query, history);
+  }, [conversations, patch, request]);
 
   // Resolve / reopen only change this session's view. The backend has no endpoint for it.
   const setResolved = useCallback((id, resolved) => {
