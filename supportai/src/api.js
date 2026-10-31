@@ -21,7 +21,7 @@ function mockReply(query) {
   return "Thanks for reaching out. Could you share a few more details, such as your order ID and what you need help with?";
 }
 
-export async function askSupport(query) {
+export async function askSupport(query, history = []) {
   if (IS_MOCK) {
     await wait(1000 + Math.random() * 700);
     // The mock mirrors the real API: asking for a human flags the reply for escalation.
@@ -34,7 +34,7 @@ export async function askSupport(query) {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, history }),
       signal: controller.signal,
     });
 
